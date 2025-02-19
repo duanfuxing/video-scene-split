@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb1-dev \
     libxcb-shm0-dev \
     libxcb-xfixes0-dev \
+    nvidia-driver-libs-headless \
     && rm -rf /var/lib/apt/lists/*
 
 # 下载并安装nv-codec-headers 注意显卡驱动版本
@@ -39,6 +40,7 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
 RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg_source && \
     cd ffmpeg_source && \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure \
+    --enable-cuda \
     --enable-cuda-nvcc \
     --enable-cuvid \
     --enable-nvenc \
@@ -71,7 +73,8 @@ RUN pip3 install --no-cache-dir ffmpeg-python \
 
 # 设置环境变量
 ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility,graphics
+ENV NVIDIA_REQUIRE_CUDA="cuda>=12.0"
 
 # 暴露API端口
 EXPOSE 9000
