@@ -163,16 +163,14 @@ def main():
                 ),
                 logger=None,
                 ffmpeg_params=[
-                    "-c:v", "h264_nvenc",  # 使用 NVENC 编码器
-                    "-preset", "p7",        # NVENC 的最快速预设
-                    "-tune", "hq",          # 高质量调优
-                    "-rc", "vbr",          # 可变比特率
-                    "-cq", "20",           # 恒定质量参数
-                    "-b:v", original_video_bitrate,  # 视频码率
-                ],
-                inputparameters=[
                     "-hwaccel", "cuda",     # 启用 CUDA 硬件加速
-                    "-hwaccel_output_format", "cuda"  # 设置输出格式为 CUDA
+                    "-hwaccel_output_format", "cuda",  # 设置输出格式为 CUDA
+                    "-c:v", "h264_nvenc",   # 使用 NVENC 编码器
+                    "-preset", "p7",         # NVENC 的最快速预设
+                    "-tune", "hq",           # 高质量调优
+                    "-rc", "vbr",           # 可变比特率
+                    "-cq", "20",            # 恒定质量参数
+                    "-b:v", original_video_bitrate,  # 视频码率
                 ]
             )
 
