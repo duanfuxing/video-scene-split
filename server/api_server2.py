@@ -490,6 +490,9 @@ def handle_error(error):
 
 if __name__ == "__main__":
     try:
+        # 初始化模型
+        init_model()
+        # 启动Flask应用
         app.run(host="0.0.0.0", port=9000)
     except Exception as e:
         logger.error(f"视频场景切割服务启动失败: {str(e)}")
