@@ -107,13 +107,13 @@ class ResourceManager:
     # 监控内存使用情况
     def monitor_memory_usage(self):
         current_time = time.time()
-        
+
         # 检查是否需要进行资源监控
         if current_time - self.last_check_time < self.check_interval:
             return None, None
-            
+
         self.last_check_time = current_time
-        
+
         try:
             # 监控CPU内存
             memory = psutil.virtual_memory()
@@ -121,7 +121,9 @@ class ResourceManager:
             cpu_used_gb = memory.used / 1024**3
 
             if cpu_used_gb > self.max_cpu_memory:
-                self.logger.warning(f"CPU内存使用接近限制: {cpu_used_gb:.2f}GB/{self.max_cpu_memory}GB")
+                self.logger.warning(
+                    f"CPU内存使用接近限制: {cpu_used_gb:.2f}GB/{self.max_cpu_memory}GB"
+                )
                 self.cleanup_memory()
 
             # 监控GPU内存
@@ -133,36 +135,39 @@ class ResourceManager:
                 gpu_used_gb = info.used / 1024**3
 
                 if gpu_used_gb > self.max_gpu_memory * 0.9:  # 90%警戒线
-                    self.logger.warning(f"GPU内存使用接近限制: {gpu_used_gb:.2f}GB/{self.max_gpu_memory}GB")
+                    self.logger.warning(
+                        f"GPU内存使用接近限制: {gpu_used_gb:.2f}GB/{self.max_gpu_memory}GB"
+                    )
                     self.cleanup_memory()
 
             return cpu_used_gb, cpu_percent
-            
+
         except Exception as e:
             self.logger.error(f"监控资源使用时发生错误: {str(e)}")
             return None, None
-            
+
     def cleanup_memory(self):
         """清理系统内存"""
         try:
             # 清理Python垃圾回收
             import gc
+
             gc.collect()
-            
+
             # 清理GPU缓存
             if self.using_gpu:
                 tf.keras.backend.clear_session()
-                
+
             # 清理系统缓存
             if hasattr(psutil, "Process"):
                 current_process = psutil.Process()
                 current_process.memory_info()
-                
+
             self.logger.info("内存清理完成")
-            
+
         except Exception as e:
             self.logger.error(f"清理内存时发生错误: {str(e)}")
-            
+
     def __del__(self):
         """析构函数，确保资源正确释放"""
         try:
@@ -179,6 +184,7 @@ class EnhancedSceneDetector(SceneDetector):
     def __init__(self, resource_manager, logger=None):
         super().__init__(logger=logger)
         self.resource_manager = resource_manager
+        self.model = self._model  # 将父类的_model赋值给self.model
         self.setup_device()
 
     # 设置计算设备
@@ -351,7 +357,7 @@ def validate_request_data(data):
     threshold = float(data.get("threshold", 0.5))
     visualize = bool(data.get("visualize", False))
     video_split_audio_mode = data.get("video_split_audio_mode", AudioMode.UNMUTE)
-    
+
     # 验证阈值范围
     if not 0 <= threshold <= 1:
         raise ValueError("阈值必须在0到1之间")
@@ -423,17 +429,20 @@ def write_video_segment(
             original_video_bitrate = "8000k"
             original_audio_bitrate = "192k"
             original_audio_codec = "aac"
-            
+
             # 检测是否支持NVENC编码器
             try:
                 test_cap = cv2.VideoCapture()
-                if hasattr(cv2, 'cudacodec') and cv2.cudacodec.getCudaEnabledDeviceCount() > 0:
+                if (
+                    hasattr(cv2, "cudacodec")
+                    and cv2.cudacodec.getCudaEnabledDeviceCount() > 0
+                ):
                     codec = VIDEO_CODEC
                 else:
-                    codec = 'libx264'
+                    codec = "libx264"
                     logger.warning("NVENC编码器不可用，使用libx264作为备选编码器")
             except Exception:
-                codec = 'libx264'
+                codec = "libx264"
                 logger.warning("检测编码器支持失败，使用libx264作为备选编码器")
 
             if video_clip.reader:
