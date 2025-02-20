@@ -1,4 +1,5 @@
-FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+
 
 # 设置代理
 ENV http_proxy=http://172.19.26.199:7890 \
