@@ -151,7 +151,7 @@ RUN pip3 install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple ffmpeg
     numpy \
     flask \
     gunicorn \
-    tensorflow==2.12.0 \
+    tensorflow==2.15.0 \
     pillow \
     tqdm \
     moviepy
