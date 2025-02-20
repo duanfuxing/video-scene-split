@@ -81,8 +81,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 下载并安装nv-codec-headers 注意显卡驱动版本
 RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
     cd nv-codec-headers && \
-    git checkout n12.2.72.0 && \
-    make install PREFIX=/usr/local
+    git checkout sdk/12.0 && \
+    make -j$(nproc) && \
+    make install
 
 # 安装 CUDA 开发工具
 RUN apt-get update && apt-get install -y --no-install-recommends \
