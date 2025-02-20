@@ -105,9 +105,9 @@ ENV PATH="/usr/local/cuda/bin:${PATH}" \
 
 # 下载并编译支持NVIDIA硬件加速的FFmpeg
 RUN cd /tmp && \
-    wget https://ffmpeg.org/releases/ffmpeg-5.1.tar.gz && \
-    tar xvf ffmpeg-5.1.tar.gz && \
-    cd ffmpeg-5.1 && \
+    wget https://ffmpeg.org/releases/ffmpeg-7.1.tar.gz && \
+    tar xvf ffmpeg-7.1.tar.gz && \
+    cd ffmpeg-7.1 && \
     PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/cuda/lib64/pkgconfig" \
     ./configure \
     --prefix=/usr/local \
