@@ -1,6 +1,16 @@
 FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
 
+# 设置代理
+ENV http_proxy=http://172.19.26.199:7890 \
+    https_proxy=http://172.19.26.199:7890 \
+    HTTP_PROXY=http://172.19.26.199:7890 \
+    HTTPS_PROXY=http://172.19.26.199:7890
+
+# 修改镜像源
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list
+
 # 安装系统依赖
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
@@ -27,7 +37,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb1-dev \
     libxcb-shm0-dev \
     libxcb-xfixes0-dev \
-    nvidia-driver-libs-headless \
+    nvidia-driver-525-server \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # 下载并安装nv-codec-headers 注意显卡驱动版本
@@ -44,15 +55,21 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg_source && \
     --enable-cuda-nvcc \
     --enable-cuvid \
     --enable-nvenc \
+    --enable-shared \
+    --extra-cflags=-g \
+    --extra-libs=-lstdc++ \
+    --extra-cxxflags=-g \
     --extra-cflags=-I/usr/local/cuda/include \
     --extra-ldflags=-L/usr/local/cuda/lib64 \
     --enable-libnpp \
     --enable-gpl \
+    --enable-pthreads \
     --enable-libx264 \
     --enable-libx265 \
     --enable-nonfree && \
     make -j$(nproc) && \
-    make install
+    make install && \
+    ldconfig # 更新动态链接库缓存
 
 # 验证FFmpeg是否支持NVIDIA编码器
 RUN ffmpeg -encoders | grep nvenc
@@ -60,8 +77,8 @@ RUN ffmpeg -encoders | grep nvenc
 # 设置工作目录
 WORKDIR /app
 
-# 安装Python依赖
-RUN pip3 install --no-cache-dir ffmpeg-python \
+# 安装Python依赖，并使用阿里云PyPI镜像加速
+RUN pip3 install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple ffmpeg-python \
     opencv-python \
     numpy \
     flask \
