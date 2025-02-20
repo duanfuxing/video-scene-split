@@ -84,12 +84,16 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
     git checkout n12.2.72.0 && \
     make install PREFIX=/usr/local
 
+# 设置CUDA环境变量
+ENV PATH="/usr/local/cuda/bin:${PATH}" \
+    LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+
 # 下载并编译支持NVIDIA硬件加速的FFmpeg
 RUN cd /tmp && \
     wget https://ffmpeg.org/releases/ffmpeg-5.1.tar.gz && \
     tar xvf ffmpeg-5.1.tar.gz && \
     cd ffmpeg-5.1 && \
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig \
+    PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/cuda/lib64/pkgconfig" \
     ./configure \
     --prefix=/usr/local \
     --pkg-config-flags="--static" \
@@ -102,14 +106,14 @@ RUN cd /tmp && \
     --enable-libfdk-aac \
     --enable-libx264 \
     --enable-libx265 \
-    --enable-cuda \
     --enable-cuda-nvcc \
+    --enable-cuda \
     --enable-cuvid \
     --enable-nvenc \
     --enable-libnpp \
     --enable-pthreads \
-    --extra-cflags="-I/usr/local/cuda/include" \
-    --extra-ldflags="-L/usr/local/cuda/lib64" \
+    --extra-cflags="-I/usr/local/cuda/include -I/usr/local/include" \
+    --extra-ldflags="-L/usr/local/cuda/lib64 -L/usr/local/lib" \
     --extra-libs="-lpthread -lm" && \
     make -j$(nproc) && \
     make install && \
