@@ -46,63 +46,6 @@ class AudioMode:
     UNMUTE = "un-mute"  # 非静音模式
 
 
-def check_gpu_support():
-    """检查系统是否支持GPU加速（基于TensorFlow）"""
-    try:
-        import tensorflow as tf
-
-        gpus = tf.config.list_physical_devices("GPU")
-        if not gpus:
-            return False
-
-        # 检查ffmpeg是否支持nvenc
-        import subprocess
-
-        result = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True)
-        return "h264_nvenc" in result.stdout
-    except ImportError:
-        return False
-    except Exception as e:
-        print(f"GPU检测时发生错误: {str(e)}")
-        return False
-
-
-def get_optimal_ffmpeg_params(video_bitrate, use_gpu=True):
-    """根据是否使用GPU返回最优的ffmpeg参数"""
-    if use_gpu:
-        return [
-            "-hwaccel",
-            "cuda",
-            "-hwaccel_output_format",
-            "cuda",
-            "-c:v",
-            "h264_nvenc",
-            "-preset",
-            "p2",  # 在p1和p7之间找到平衡点
-            "-tune",
-            "hq",
-            "-rc-lookahead",
-            "20",
-            "-b:v",
-            video_bitrate,
-            "-maxrate",
-            str(int(int(video_bitrate.replace("k", "000")) * 1.5)),
-            "-bufsize",
-            str(int(int(video_bitrate.replace("k", "000")) * 2)),
-        ]
-    else:
-        return [
-            "-c:v",
-            "libx264",
-            "-preset",
-            "medium",
-            "-crf",
-            "23",
-            "-b:v",
-            video_bitrate,
-        ]
-
-
 def main():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="视频场景切分工具")
@@ -126,23 +69,12 @@ def main():
         default=AudioMode.UNMUTE,
         help="音频处理模式：mute（静音）或un-mute（保留音频，默认）",
     )
-    parser.add_argument(
-        "--no-gpu",
-        action="store_true",
-        help="禁用GPU加速",
-    )
     args = parser.parse_args()
 
     # 验证输入文件是否存在
     if not os.path.exists(args.input):
         print(f"错误：视频文件 '{args.input}' 不存在")
         sys.exit(1)
-
-    # 检查GPU支持
-    use_gpu = True
-    # use_gpu = not args.no_gpu and check_gpu_support()
-    # if not use_gpu and not args.no_gpu:
-    #     print("警告：未检测到可用的GPU或NVENC支持，将使用CPU处理")
 
     # 判断taskid是否存在
     if not args.taskid:
@@ -171,32 +103,7 @@ def main():
 
         # 加载视频文件
         print("正在切分场景...")
-        # 设置 moviepy 的 FFMPEG 全局配置
-        os.environ["IMAGEIO_FFMPEG_EXE"] = "ffmpeg"
         video_clip = VideoFileClip(args.input)
-
-        # 获取CPU核心数并设置合适的线程数
-        cpu_count = os.cpu_count() or 4
-        thread_count = max(1, cpu_count - 2) if not use_gpu else 2
-
-        # 获取原视频的编码参数
-        original_video_bitrate = "8000k"
-        original_audio_bitrate = "192k"
-        original_audio_codec = "aac"
-
-        if video_clip.reader:
-            if hasattr(video_clip.reader, "bitrate") and video_clip.reader.bitrate:
-                original_video_bitrate = str(int(video_clip.reader.bitrate)) + "k"
-            if (
-                hasattr(video_clip.reader, "audio_bitrate")
-                and video_clip.reader.audio_bitrate
-            ):
-                original_audio_bitrate = str(int(video_clip.reader.audio_bitrate)) + "k"
-            if (
-                hasattr(video_clip.reader, "audio_codec")
-                and video_clip.reader.audio_codec
-            ):
-                original_audio_codec = video_clip.reader.audio_codec
 
         # 为每个切片生成独立的输出文件名
         for i, (start, end) in enumerate(scenes):
@@ -210,14 +117,38 @@ def main():
             print(f"  开始时间: {format_time(start, video_clip.fps)}")
             print(f"  结束时间: {format_time(end, video_clip.fps)}")
 
-            # 获取ffmpeg参数
-            ffmpeg_params = get_optimal_ffmpeg_params(original_video_bitrate, use_gpu)
+            # 获取原视频的编码参数
+            original_video_bitrate = "8000k"
+            original_audio_bitrate = "192k"
+            original_audio_codec = "aac"
 
-            # 输出每个视频片段
+            if video_clip.reader:
+                if hasattr(video_clip.reader, "bitrate") and video_clip.reader.bitrate:
+                    original_video_bitrate = str(int(video_clip.reader.bitrate)) + "k"
+                if (
+                    hasattr(video_clip.reader, "audio_bitrate")
+                    and video_clip.reader.audio_bitrate
+                ):
+                    original_audio_bitrate = (
+                        str(int(video_clip.reader.audio_bitrate)) + "k"
+                    )
+                if (
+                    hasattr(video_clip.reader, "audio_codec")
+                    and video_clip.reader.audio_codec
+                ):
+                    original_audio_codec = video_clip.reader.audio_codec
+
+            # 获取CPU核心数并设置合适的线程数（保留1-2个核心给系统）
+            cpu_count = os.cpu_count() or 4
+            thread_count = max(1, cpu_count - 2)
+
+            # 输出每个视频片段，使用原视频参数
             segment_clip.write_videofile(
                 output_path,
-                codec="h264_nvenc" if use_gpu else "libx264",
+                codec="libx264",  # CPU libx264
                 fps=video_clip.fps,
+                bitrate=original_video_bitrate,
+                preset="slow",  # 使用标准的 FFmpeg 预设
                 threads=thread_count,
                 audio=args.audio_mode == AudioMode.UNMUTE,
                 audio_codec=(
@@ -231,7 +162,6 @@ def main():
                     else None
                 ),
                 logger=None,
-                ffmpeg_params=ffmpeg_params,
             )
 
         # 如果需要可视化，生成预测结果的可视化图像
