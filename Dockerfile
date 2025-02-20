@@ -85,39 +85,36 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
     make install PREFIX=/usr/local
 
 # 下载并编译支持NVIDIA硬件加速的FFmpeg
-RUN wget http://ffmpeg.org/releases/ffmpeg-5.1.tar.gz && \
-    tar zxvf ffmpeg-5.1.tar.gz && \
+RUN cd /tmp && \
+    wget https://ffmpeg.org/releases/ffmpeg-5.1.tar.gz && \
+    tar xvf ffmpeg-5.1.tar.gz && \
     cd ffmpeg-5.1 && \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure \
+    --prefix=/usr/local \
+    --disable-debug \
+    --disable-doc \
     --disable-asm \
     --disable-x86asm \
+    --enable-shared \
+    --enable-gpl \
+    --enable-nonfree \
     --enable-libfdk-aac \
-    --enable-libfreetype \
-    --enable-libmp3lame \
-    --enable-libopus \
-    --enable-libtheora \
-    --enable-libvorbis \
-    --enable-libass \
+    --enable-libx264 \
+    --enable-libx265 \
     --enable-cuda \
     --enable-cuda-nvcc \
     --enable-cuvid \
     --enable-nvenc \
-    --enable-shared \
-    --extra-cflags=-fPIC \
-    --extra-cflags=-g \
-    --extra-libs=-lstdc++ \
-    --extra-cxxflags=-g \
-    --extra-cflags=-I/usr/local/cuda/include \
-    --extra-ldflags=-L/usr/local/cuda/lib64 \
     --enable-libnpp \
-    --enable-gpl \
     --enable-pthreads \
-    --enable-libx264 \
-    --enable-libx265 \
-    --enable-nonfree && \
+    --extra-cflags="-I/usr/local/cuda/include -fPIC" \
+    --extra-ldflags="-L/usr/local/cuda/lib64" \
+    --extra-libs="-lstdc++" && \
     make -j$(nproc) && \
     make install && \
-    ldconfig # 更新动态链接库缓存
+    cd /tmp && \
+    rm -rf ffmpeg* && \
+    ldconfig
 
 # 验证FFmpeg是否支持NVIDIA编码器
 RUN ffmpeg -encoders | grep nvenc
