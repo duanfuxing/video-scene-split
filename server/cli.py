@@ -104,11 +104,8 @@ def main():
         # 加载视频文件
         print("正在切分场景...")
         # 设置 moviepy 的 FFMPEG 全局配置
-        from moviepy.config import change_settings
-        change_settings({
-            "FFMPEG_BINARY": "ffmpeg",
-            "FFMPEG_PARAMS": ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
-        })
+        import os
+        os.environ['IMAGEIO_FFMPEG_EXE'] = 'ffmpeg'
         video_clip = VideoFileClip(args.input)
 
         # 为每个切片生成独立的输出文件名
@@ -154,7 +151,7 @@ def main():
                 codec="h264_nvenc",
                 fps=video_clip.fps,
                 bitrate=original_video_bitrate,
-                preset="medium",
+                preset="p1",  # NVENC 预设，p1-p7，p1最高质量
                 threads=thread_count,
                 audio=args.audio_mode == AudioMode.UNMUTE,
                 audio_codec=(
@@ -169,12 +166,13 @@ def main():
                 ),
                 logger=None,
                 ffmpeg_params=[
+                    "-hwaccel", "cuda",     # 启用 CUDA 硬件加速
+                    "-hwaccel_output_format", "cuda",  # 设置输出格式为 CUDA
                     "-c:v", "h264_nvenc",   # 使用 NVENC 编码器
-                    "-preset", "fast",       # 编码速度预设
-                    "-profile:v", "high",    # 使用高质量配置
+                    "-rc:v", "vbr_hq",      # 高质量可变比特率模式
+                    "-qmin", "0",           # 最小量化参数
+                    "-qmax", "51",          # 最大量化参数
                     "-b:v", original_video_bitrate,  # 视频码率
-                    "-maxrate", original_video_bitrate,  # 最大码率
-                    "-bufsize", str(int(original_video_bitrate.replace('k', '')) * 2) + "k"  # 缓冲大小
                 ]
             )
 
