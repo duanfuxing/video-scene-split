@@ -9,15 +9,6 @@ ENV http_proxy=http://172.19.26.199:7890 \
 # 修改镜像源
 RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list
 
-# 安装cuDNN
-RUN cd /tmp && \
-    wget https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.4.25_cuda12-archive.tar.xz && \
-    tar -xf cudnn-linux-x86_64-8.9.4.25_cuda12-archive.tar.xz && \
-    cp -r cudnn-linux-x86_64-8.9.4.25_cuda12-archive/lib/* /usr/local/cuda/lib64/ && \
-    cp -r cudnn-linux-x86_64-8.9.4.25_cuda12-archive/include/* /usr/local/cuda/include/ && \
-    rm -rf /tmp/cudnn* && \
-    ldconfig
-
 # 安装系统依赖
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -89,6 +80,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopus-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# 安装cuDNN
+RUN cd /tmp && \
+    wget https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.4.25_cuda12-archive.tar.xz && \
+    tar -xf cudnn-linux-x86_64-8.9.4.25_cuda12-archive.tar.xz && \
+    cp -r cudnn-linux-x86_64-8.9.4.25_cuda12-archive/lib/* /usr/local/cuda/lib64/ && \
+    cp -r cudnn-linux-x86_64-8.9.4.25_cuda12-archive/include/* /usr/local/cuda/include/ && \
+    rm -rf /tmp/cudnn* && \
+    ldconfig
 
 # 下载并安装nv-codec-headers 注意显卡驱动版本
 RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
