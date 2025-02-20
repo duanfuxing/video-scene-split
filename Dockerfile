@@ -157,7 +157,7 @@ WORKDIR /app
 # 安装Python依赖，并使用阿里云PyPI镜像加速
 RUN pip3 install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple \
     ffmpeg-python==0.2.0 \
-    opencv-python==4.11.0 \
+    opencv-python==4.11.0.86 \
     numpy==1.26.4 \
     flask==3.1.0 \
     gunicorn==23.0.0 \
