@@ -207,6 +207,21 @@ class EnhancedSceneDetector(SceneDetector):
         """使用tf.function加速批处理"""
         return self.model(batch_frames, training=False)
 
+    def preprocess_frame(self, frame):
+        """预处理视频帧
+
+        Args:
+            frame (np.ndarray): 输入视频帧
+
+        Returns:
+            tf.Tensor: 预处理后的帧
+        """
+        # 调整帧大小为模型所需的输入尺寸(27x48)
+        resized_frame = cv2.resize(frame, (48, 27))
+        # 转换为float32类型并归一化到[0,1]范围
+        normalized_frame = resized_frame.astype(np.float32) / 255.0
+        return normalized_frame
+
     def predict_video(self, input_path):
         """重写预测方法，添加GPU支持和内存监控"""
         batch_size = 32 if self.resource_manager.using_gpu else 16
