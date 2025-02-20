@@ -103,7 +103,14 @@ def main():
 
         # 加载视频文件
         print("正在切分场景...")
-        video_clip = VideoFileClip(args.input)
+        video_clip = VideoFileClip(
+            args.input,
+            # 在加载视频时启用硬件加速
+            ffmpeg_params=[
+                "-hwaccel", "cuda",
+                "-hwaccel_output_format", "cuda"
+            ]
+        )
 
         # 为每个切片生成独立的输出文件名
         for i, (start, end) in enumerate(scenes):
@@ -163,14 +170,12 @@ def main():
                 ),
                 logger=None,
                 ffmpeg_params=[
-                    "-hwaccel", "cuda",     # 启用 CUDA 硬件加速
-                    "-hwaccel_output_format", "cuda",  # 设置输出格式为 CUDA
                     "-c:v", "h264_nvenc",   # 使用 NVENC 编码器
                     "-preset", "fast",       # 编码速度预设
                     "-profile:v", "high",    # 使用高质量配置
                     "-b:v", original_video_bitrate,  # 视频码率
                     "-maxrate", original_video_bitrate,  # 最大码率
-                    "-bufsize", str(int(original_video_bitrate.replace('k', '')) * 2) + "k",  # 缓冲大小
+                    "-bufsize", str(int(original_video_bitrate.replace('k', '')) * 2) + "k"  # 缓冲大小
                 ]
             )
 
