@@ -84,9 +84,23 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
     git checkout n12.2.72.0 && \
     make install PREFIX=/usr/local
 
+# 安装 CUDA 开发工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cuda-nvcc-12-6 \
+    cuda-nvrtc-12-6 \
+    cuda-nvrtc-dev-12-6 \
+    cuda-nvml-dev-12-6 \
+    cuda-command-line-tools-12-6 \
+    cuda-libraries-dev-12-6 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # 设置CUDA环境变量
 ENV PATH="/usr/local/cuda/bin:${PATH}" \
-    LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+    LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/lib:${LD_LIBRARY_PATH}" \
+    CUDA_HOME="/usr/local/cuda" \
+    CUDA_PATH="/usr/local/cuda" \
+    FFMPEG_NVENC_FLAGS="-I/usr/local/cuda/include"
 
 # 下载并编译支持NVIDIA硬件加速的FFmpeg
 RUN cd /tmp && \
@@ -96,7 +110,6 @@ RUN cd /tmp && \
     PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/cuda/lib64/pkgconfig" \
     ./configure \
     --prefix=/usr/local \
-    --pkg-config-flags="--static" \
     --disable-debug \
     --disable-doc \
     --disable-ffplay \
@@ -106,15 +119,15 @@ RUN cd /tmp && \
     --enable-libfdk-aac \
     --enable-libx264 \
     --enable-libx265 \
-    --enable-cuda-nvcc \
     --enable-cuda \
+    --enable-cuda-llvm \
     --enable-cuvid \
     --enable-nvenc \
     --enable-libnpp \
     --enable-pthreads \
     --extra-cflags="-I/usr/local/cuda/include -I/usr/local/include" \
     --extra-ldflags="-L/usr/local/cuda/lib64 -L/usr/local/lib" \
-    --extra-libs="-lpthread -lm" && \
+    --extra-libs="-lpthread -lm -lcuda -lcudart" && \
     make -j$(nproc) && \
     make install && \
     cd /tmp && \
