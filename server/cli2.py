@@ -83,7 +83,6 @@ def get_optimal_ffmpeg_params(video_bitrate, use_gpu=True):
             "hq",
             "-rc-lookahead",
             "20",
-            "-rc",
             "vbr",
             "-cq",
             "23",
