@@ -89,12 +89,13 @@ RUN cd /tmp && \
     wget https://ffmpeg.org/releases/ffmpeg-5.1.tar.gz && \
     tar xvf ffmpeg-5.1.tar.gz && \
     cd ffmpeg-5.1 && \
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig \
+    ./configure \
     --prefix=/usr/local \
+    --pkg-config-flags="--static" \
     --disable-debug \
     --disable-doc \
-    --disable-asm \
-    --disable-x86asm \
+    --disable-ffplay \
     --enable-shared \
     --enable-gpl \
     --enable-nonfree \
@@ -107,9 +108,9 @@ RUN cd /tmp && \
     --enable-nvenc \
     --enable-libnpp \
     --enable-pthreads \
-    --extra-cflags="-I/usr/local/cuda/include -fPIC" \
+    --extra-cflags="-I/usr/local/cuda/include" \
     --extra-ldflags="-L/usr/local/cuda/lib64" \
-    --extra-libs="-lstdc++" && \
+    --extra-libs="-lpthread -lm" && \
     make -j$(nproc) && \
     make install && \
     cd /tmp && \
