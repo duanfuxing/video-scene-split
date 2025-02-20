@@ -52,7 +52,6 @@ def check_gpu_support():
         import tensorflow as tf
 
         gpus = tf.config.list_physical_devices("GPU")
-        print(gpus)
         if not gpus:
             return False
 
@@ -144,9 +143,10 @@ def main():
         sys.exit(1)
 
     # 检查GPU支持
-    use_gpu = not args.no_gpu and check_gpu_support()
-    if not use_gpu and not args.no_gpu:
-        print("警告：未检测到可用的GPU或NVENC支持，将使用CPU处理")
+    use_gpu = True
+    # use_gpu = not args.no_gpu and check_gpu_support()
+    # if not use_gpu and not args.no_gpu:
+    #     print("警告：未检测到可用的GPU或NVENC支持，将使用CPU处理")
 
     # 判断taskid是否存在
     if not args.taskid:
