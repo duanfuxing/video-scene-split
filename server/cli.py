@@ -147,28 +147,33 @@ def main():
                 output_path,
                 codec="h264_nvenc",
                 fps=video_clip.fps,
-                bitrate=original_video_bitrate,  # 使用原视频码率
-                preset="medium",  # 使用平衡的预设
-                threads=thread_count,  # 动态设置线程数
-                audio=args.audio_mode
-                == AudioMode.UNMUTE,  # 根据音频处理模式决定是否包含音频
+                bitrate=original_video_bitrate,
+                preset="medium",
+                threads=thread_count,
+                audio=args.audio_mode == AudioMode.UNMUTE,
                 audio_codec=(
                     original_audio_codec
                     if args.audio_mode == AudioMode.UNMUTE
                     else None
-                ),  # 根据音频处理模式设置音频编码器
+                ),
                 audio_bitrate=(
                     original_audio_bitrate
                     if args.audio_mode == AudioMode.UNMUTE
                     else None
-                ),  # 根据音频处理模式设置音频码率
-                logger=None,  # 禁用moviepy的内部logger
+                ),
+                logger=None,
                 ffmpeg_params=[
-                    "-hwaccel",
-                    "cuda",  # 启用CUDA硬件加速
-                    "-hwaccel_output_format",
-                    "cuda",  # 设置输出格式为CUDA
+                    "-c:v", "h264_nvenc",  # 使用 NVENC 编码器
+                    "-preset", "p7",        # NVENC 的最快速预设
+                    "-tune", "hq",          # 高质量调优
+                    "-rc", "vbr",          # 可变比特率
+                    "-cq", "20",           # 恒定质量参数
+                    "-b:v", original_video_bitrate,  # 视频码率
                 ],
+                inputparameters=[
+                    "-hwaccel", "cuda",     # 启用 CUDA 硬件加速
+                    "-hwaccel_output_format", "cuda"  # 设置输出格式为 CUDA
+                ]
             )
 
         # 如果需要可视化，生成预测结果的可视化图像
