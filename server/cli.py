@@ -103,14 +103,13 @@ def main():
 
         # 加载视频文件
         print("正在切分场景...")
-        video_clip = VideoFileClip(
-            args.input,
-            # 在加载视频时启用硬件加速
-            ffmpeg_params=[
-                "-hwaccel", "cuda",
-                "-hwaccel_output_format", "cuda"
-            ]
-        )
+        # 设置 moviepy 的 FFMPEG 全局配置
+        from moviepy.config import change_settings
+        change_settings({
+            "FFMPEG_BINARY": "ffmpeg",
+            "FFMPEG_PARAMS": ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"]
+        })
+        video_clip = VideoFileClip(args.input)
 
         # 为每个切片生成独立的输出文件名
         for i, (start, end) in enumerate(scenes):
