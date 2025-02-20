@@ -150,7 +150,7 @@ def main():
                 codec="h264_nvenc",
                 fps=video_clip.fps,
                 bitrate=original_video_bitrate,
-                preset="p1",  # NVENC 预设，p1-p7，p1最高质量
+                preset="slow",  # 使用标准的 FFmpeg 预设
                 threads=thread_count,
                 audio=args.audio_mode == AudioMode.UNMUTE,
                 audio_codec=(
@@ -165,21 +165,12 @@ def main():
                 ),
                 logger=None,
                 ffmpeg_params=[
-                    "-hwaccel",
-                    "cuda",  # 启用 CUDA 硬件加速
-                    "-hwaccel_output_format",
-                    "cuda",  # 设置输出格式为 CUDA
-                    "-c:v",
-                    "h264_nvenc",  # 使用 NVENC 编码器
-                    "-rc:v",
-                    "vbr_hq",  # 高质量可变比特率模式
-                    "-qmin",
-                    "0",  # 最小量化参数
-                    "-qmax",
-                    "51",  # 最大量化参数
-                    "-b:v",
-                    original_video_bitrate,  # 视频码率
-                ],
+                    "-hwaccel", "cuda",     # 启用 CUDA 硬件加速
+                    "-hwaccel_output_format", "cuda",  # 设置输出格式为 CUDA
+                    "-c:v", "h264_nvenc",   # 使用 NVENC 编码器
+                    "-preset", "p7",         # NVENC 预设（p1-p7，p7最快）
+                    "-b:v", original_video_bitrate,  # 视频码率
+                ]
             )
 
         # 如果需要可视化，生成预测结果的可视化图像
