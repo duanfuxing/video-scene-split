@@ -47,18 +47,23 @@ class AudioMode:
 
 
 def check_gpu_support():
-    """检查系统是否支持NVIDIA GPU加速"""
+    """检查系统是否支持GPU加速（基于TensorFlow）"""
     try:
-        import torch
+        import tensorflow as tf
 
-        if not torch.cuda.is_available():
+        gpus = tf.config.list_physical_devices("GPU")
+        if not gpus:
             return False
+
         # 检查ffmpeg是否支持nvenc
         import subprocess
 
         result = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True)
         return "h264_nvenc" in result.stdout
     except ImportError:
+        return False
+    except Exception as e:
+        print(f"GPU检测时发生错误: {str(e)}")
         return False
 
 
@@ -140,7 +145,7 @@ def main():
     # 检查GPU支持
     use_gpu = not args.no_gpu and check_gpu_support()
     if not use_gpu and not args.no_gpu:
-        print("警告：未检测到可用的NVIDIA GPU或NVENC支持，将使用CPU处理")
+        print("警告：未检测到可用的GPU或NVENC支持，将使用CPU处理")
 
     # 判断taskid是否存在
     if not args.taskid:
