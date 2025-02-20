@@ -30,6 +30,7 @@ import sys
 import tensorflow as tf
 import psutil
 import nvidia_smi
+import numpy as np
 
 # 初始化GPU监控
 nvidia_smi.nvmlInit()
