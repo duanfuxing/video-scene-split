@@ -1,7 +1,7 @@
 # gpu service
 services:
   video_scene_split_test:
-    image: catchoco/video_scene_split_test
+    image: carchoco/video_scene_split_test
     container_name: video_scene_split_test
     runtime: nvidia
     deploy:
