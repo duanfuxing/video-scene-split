@@ -38,6 +38,43 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-shm0-dev \
     libxcb-xfixes0-dev \
     nvidia-driver-525-server \
+    libreadline-dev \
+    libbz2-dev \
+    libsm6 \
+    libxrender1 \
+    libxext-dev \
+    libgomp1 \
+    liblzma-dev \
+    libgl1-mesa-glx \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libglib2.0-0 \
+    mpich \
+    openmpi-bin \
+    libopenmpi-dev \
+    gcc \
+    g++ \
+    make \
+    zlib1g \
+    openssl \
+    libsqlite3-dev \
+    libssl-dev \
+    libffi-dev \
+    unzip \
+    pciutils \
+    net-tools \
+    libblas-dev \
+    gfortran \
+    libblas3 \
+    libopenblas-dev \
+    git-lfs \
+    libswresample-dev \
+    libfreetype6-dev \
+    libtheora-dev \
+    libvorbis-dev \
+    texinfo \
+    libmp3lame-dev \
+    libopus-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -48,14 +85,25 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
     make install PREFIX=/usr/local
 
 # 下载并编译支持NVIDIA硬件加速的FFmpeg
-RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg_source && \
-    cd ffmpeg_source && \
+RUN wget http://ffmpeg.org/releases/ffmpeg-5.1.tar.gz && \
+    tar zxvf ffmpeg-5.1.tar.gz && \
+    cd ffmpeg-5.1 && \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure \
+    --disable-asm \
+    --disable-x86asm \
+    --enable-libfdk-aac \
+    --enable-libfreetype \
+    --enable-libmp3lame \
+    --enable-libopus \
+    --enable-libtheora \
+    --enable-libvorbis \
+    --enable-libass \
     --enable-cuda \
     --enable-cuda-nvcc \
     --enable-cuvid \
     --enable-nvenc \
     --enable-shared \
+    --extra-cflags=-fPIC \
     --extra-cflags=-g \
     --extra-libs=-lstdc++ \
     --extra-cxxflags=-g \
