@@ -103,8 +103,6 @@ def main():
 
         # 加载视频文件
         print("正在切分场景...")
-        # 设置 moviepy 的 FFMPEG 全局配置
-        os.environ["IMAGEIO_FFMPEG_EXE"] = "ffmpeg"
         video_clip = VideoFileClip(args.input)
 
         # 为每个切片生成独立的输出文件名
@@ -164,13 +162,6 @@ def main():
                     else None
                 ),
                 logger=None,
-                ffmpeg_params=[
-                    "-hwaccel", "cuda",     # 启用 CUDA 硬件加速
-                    "-hwaccel_output_format", "cuda",  # 设置输出格式为 CUDA
-                    "-c:v", "h264_nvenc",   # 使用 NVENC 编码器
-                    "-preset", "p7",         # NVENC 预设（p1-p7，p7最快）
-                    "-b:v", original_video_bitrate,  # 视频码率
-                ]
             )
 
         # 如果需要可视化，生成预测结果的可视化图像
