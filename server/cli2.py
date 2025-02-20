@@ -177,25 +177,36 @@ def main():
         print("正在切分场景...")
         # 设置 moviepy 的 FFMPEG 全局配置
         os.environ["IMAGEIO_FFMPEG_EXE"] = "ffmpeg"
+        video_clip = VideoFileClip(args.input)
 
         # 获取CPU核心数并设置合适的线程数
         cpu_count = os.cpu_count() or 4
         thread_count = max(1, cpu_count - 2) if not use_gpu else 2
 
+        # 获取原视频的编码参数
+        original_video_bitrate = "8000k"
+        original_audio_bitrate = "192k"
+        original_audio_codec = "aac"
+
+        if video_clip.reader:
+            if hasattr(video_clip.reader, "bitrate") and video_clip.reader.bitrate:
+                original_video_bitrate = str(int(video_clip.reader.bitrate)) + "k"
+            if (
+                hasattr(video_clip.reader, "audio_bitrate")
+                and video_clip.reader.audio_bitrate
+            ):
+                original_audio_bitrate = str(int(video_clip.reader.audio_bitrate)) + "k"
+            if (
+                hasattr(video_clip.reader, "audio_codec")
+                and video_clip.reader.audio_codec
+            ):
+                original_audio_codec = video_clip.reader.audio_codec
+
         # 为每个切片生成独立的输出文件名
         for i, (start, end) in enumerate(scenes):
-            # 为每个片段创建新的 VideoFileClip
-            video_clip = VideoFileClip(
-                args.input, audio=args.audio_mode == AudioMode.UNMUTE
-            )
-
             start_time = start / video_clip.fps
             end_time = end / video_clip.fps
-
-            # 使用切片操作获取子片段
-            segment_clip = video_clip.get_frame_segment(
-                start_frame=start, end_frame=end, include_end=False
-            )
+            segment_clip = video_clip.subclipped(start_time, end_time)
 
             # 为每个视频片段生成唯一文件名，输出到指定目录
             output_path = f"{args.output}/segment_{i + 1}.mp4"
@@ -203,59 +214,29 @@ def main():
             print(f"  开始时间: {format_time(start, video_clip.fps)}")
             print(f"  结束时间: {format_time(end, video_clip.fps)}")
 
-            # 获取原视频的编码参数
-            original_video_bitrate = "8000k"
-            original_audio_bitrate = "192k"
-            original_audio_codec = "aac"
-
-            if video_clip.reader:
-                if hasattr(video_clip.reader, "bitrate") and video_clip.reader.bitrate:
-                    original_video_bitrate = str(int(video_clip.reader.bitrate)) + "k"
-                if (
-                    hasattr(video_clip.reader, "audio_bitrate")
-                    and video_clip.reader.audio_bitrate
-                ):
-                    original_audio_bitrate = (
-                        str(int(video_clip.reader.audio_bitrate)) + "k"
-                    )
-                if (
-                    hasattr(video_clip.reader, "audio_codec")
-                    and video_clip.reader.audio_codec
-                ):
-                    original_audio_codec = video_clip.reader.audio_codec
-
             # 获取ffmpeg参数
             ffmpeg_params = get_optimal_ffmpeg_params(original_video_bitrate, use_gpu)
 
-            # 使用 ffmpeg-python 直接进行视频切片
-            import ffmpeg
-
-            stream = ffmpeg.input(args.input, ss=start_time, t=end_time - start_time)
-
-            if args.audio_mode == AudioMode.UNMUTE:
-                stream = ffmpeg.output(
-                    stream,
-                    output_path,
-                    vcodec="h264_nvenc" if use_gpu else "libx264",
-                    acodec=original_audio_codec,
-                    video_bitrate=original_video_bitrate,
-                    audio_bitrate=original_audio_bitrate,
-                    **dict(zip(ffmpeg_params[::2], ffmpeg_params[1::2])),
-                )
-            else:
-                stream = ffmpeg.output(
-                    stream,
-                    output_path,
-                    vcodec="h264_nvenc" if use_gpu else "libx264",
-                    an=None,  # 禁用音频
-                    video_bitrate=original_video_bitrate,
-                    **dict(zip(ffmpeg_params[::2], ffmpeg_params[1::2])),
-                )
-
-            ffmpeg.run(stream, overwrite_output=True)
-
-            # 关闭视频对象
-            video_clip.close()
+            # 输出每个视频片段
+            segment_clip.write_videofile(
+                output_path,
+                codec="h264_nvenc" if use_gpu else "libx264",
+                fps=video_clip.fps,
+                threads=thread_count,
+                audio=args.audio_mode == AudioMode.UNMUTE,
+                audio_codec=(
+                    original_audio_codec
+                    if args.audio_mode == AudioMode.UNMUTE
+                    else None
+                ),
+                audio_bitrate=(
+                    original_audio_bitrate
+                    if args.audio_mode == AudioMode.UNMUTE
+                    else None
+                ),
+                logger=None,
+                ffmpeg_params=ffmpeg_params,
+            )
 
         # 如果需要可视化，生成预测结果的可视化图像
         if args.visualize:
@@ -264,6 +245,9 @@ def main():
                 video_frames, [single_frame_predictions, all_frame_predictions]
             )
             visualization.save(f"{args.output}/predictions.png")
+
+        # 关闭视频对象
+        video_clip.close()
 
         print(f"\n处理完成！")
         print(f"共检测到 {len(scenes)} 个场景")
