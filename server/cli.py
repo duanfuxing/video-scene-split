@@ -163,6 +163,12 @@ def main():
                     else None
                 ),  # 根据音频处理模式设置音频码率
                 logger=None,  # 禁用moviepy的内部logger
+                ffmpeg_params=[
+                    "-hwaccel",
+                    "cuda",  # 启用CUDA硬件加速
+                    "-hwaccel_output_format",
+                    "cuda",  # 设置输出格式为CUDA
+                ],
             )
 
         # 如果需要可视化，生成预测结果的可视化图像
