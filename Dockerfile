@@ -91,12 +91,12 @@ RUN git clone https://github.com/FFmpeg/nv-codec-headers.git && \
 
 # 安装 CUDA 开发工具
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    cuda-nvcc-12-6 \
-    cuda-nvrtc-12-6 \
-    cuda-nvrtc-dev-12-6 \
-    cuda-nvml-dev-12-6 \
-    cuda-command-line-tools-12-6 \
-    cuda-libraries-dev-12-6 \
+    cuda-nvcc-12-4 \
+    cuda-nvrtc-12-4 \
+    cuda-nvrtc-dev-12-4 \
+    cuda-nvml-dev-12-4 \
+    cuda-command-line-tools-12-4 \
+    cuda-libraries-dev-12-4 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
