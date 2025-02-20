@@ -184,7 +184,7 @@ def main():
 
         # 为每个切片生成独立的输出文件名
         for i, (start, end) in enumerate(scenes):
-            # 为每个片段创建新的 VideoFileClip，避免使用 subclip
+            # 为每个片段创建新的 VideoFileClip
             video_clip = VideoFileClip(
                 args.input, audio=args.audio_mode == AudioMode.UNMUTE
             )
@@ -192,8 +192,10 @@ def main():
             start_time = start / video_clip.fps
             end_time = end / video_clip.fps
 
-            # 使用 .make_subclip() 替代 .subclip()
-            segment_clip = video_clip.make_subclip(start_time, end_time)
+            # 使用切片操作获取子片段
+            segment_clip = video_clip.get_frame_segment(
+                start_frame=start, end_frame=end, include_end=False
+            )
 
             # 为每个视频片段生成唯一文件名，输出到指定目录
             output_path = f"{args.output}/segment_{i + 1}.mp4"
@@ -225,29 +227,34 @@ def main():
             # 获取ffmpeg参数
             ffmpeg_params = get_optimal_ffmpeg_params(original_video_bitrate, use_gpu)
 
-            # 输出每个视频片段
-            segment_clip.write_videofile(
-                output_path,
-                codec="h264_nvenc" if use_gpu else "libx264",
-                fps=video_clip.fps,
-                threads=thread_count,
-                audio=args.audio_mode == AudioMode.UNMUTE,
-                audio_codec=(
-                    original_audio_codec
-                    if args.audio_mode == AudioMode.UNMUTE
-                    else None
-                ),
-                audio_bitrate=(
-                    original_audio_bitrate
-                    if args.audio_mode == AudioMode.UNMUTE
-                    else None
-                ),
-                logger=None,
-                ffmpeg_params=ffmpeg_params,
-            )
+            # 使用 ffmpeg-python 直接进行视频切片
+            import ffmpeg
 
-            # 关闭当前片段的视频对象
-            segment_clip.close()
+            stream = ffmpeg.input(args.input, ss=start_time, t=end_time - start_time)
+
+            if args.audio_mode == AudioMode.UNMUTE:
+                stream = ffmpeg.output(
+                    stream,
+                    output_path,
+                    vcodec="h264_nvenc" if use_gpu else "libx264",
+                    acodec=original_audio_codec,
+                    video_bitrate=original_video_bitrate,
+                    audio_bitrate=original_audio_bitrate,
+                    **dict(zip(ffmpeg_params[::2], ffmpeg_params[1::2])),
+                )
+            else:
+                stream = ffmpeg.output(
+                    stream,
+                    output_path,
+                    vcodec="h264_nvenc" if use_gpu else "libx264",
+                    an=None,  # 禁用音频
+                    video_bitrate=original_video_bitrate,
+                    **dict(zip(ffmpeg_params[::2], ffmpeg_params[1::2])),
+                )
+
+            ffmpeg.run(stream, overwrite_output=True)
+
+            # 关闭视频对象
             video_clip.close()
 
         # 如果需要可视化，生成预测结果的可视化图像
