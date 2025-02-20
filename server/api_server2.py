@@ -532,6 +532,10 @@ def process_video_segments(
 # 处理视频场景分割请求 API
 @app.route("/api/v1/scene-detection/process", methods=["POST"])
 def process_scene_detection():
+    # 初始化变量
+    task_id = None
+    output_path = None
+
     try:
         # 解析和验证请求数据
         data = request.get_json()

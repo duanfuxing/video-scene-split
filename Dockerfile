@@ -164,7 +164,9 @@ RUN pip3 install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple \
     tensorflow==2.15.0 \
     pillow==10.4.0 \
     tqdm==4.67.1 \
-    moviepy==2.1.2
+    moviepy==2.1.2 \
+    psutil==7.0.0 \
+    nvidia-ml-py3==7.352.0
 
 # 设置环境变量
 ENV NVIDIA_VISIBLE_DEVICES=all
