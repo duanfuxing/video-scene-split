@@ -1,4 +1,5 @@
-FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+
 
 # 设置代理
 ENV http_proxy=http://172.19.26.199:7890 \
@@ -8,15 +9,6 @@ ENV http_proxy=http://172.19.26.199:7890 \
 
 # 修改镜像源
 RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list
-
-# 安装cuDNN
-RUN cd /tmp && \
-    wget https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.4.25_cuda12-archive.tar.xz && \
-    tar -xf cudnn-linux-x86_64-8.9.4.25_cuda12-archive.tar.xz && \
-    cp -r cudnn-linux-x86_64-8.9.4.25_cuda12-archive/lib/* /usr/local/cuda/lib64/ && \
-    cp -r cudnn-linux-x86_64-8.9.4.25_cuda12-archive/include/* /usr/local/cuda/include/ && \
-    rm -rf /tmp/cudnn* && \
-    ldconfig
 
 # 安装系统依赖
 ENV DEBIAN_FRONTEND=noninteractive
@@ -108,6 +100,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# 设置CUDA环境变量
+ENV PATH="/usr/local/cuda/bin:${PATH}" \
+    LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/lib:${LD_LIBRARY_PATH}" \
+    CUDA_HOME="/usr/local/cuda" \
+    CUDA_PATH="/usr/local/cuda" \
+    FFMPEG_NVENC_FLAGS="-I/usr/local/cuda/include"
+
 # 下载并编译支持NVIDIA硬件加速的FFmpeg
 RUN cd /tmp && \
     wget https://ffmpeg.org/releases/ffmpeg-7.1.tar.gz && \
@@ -140,14 +139,6 @@ RUN cd /tmp && \
     rm -rf ffmpeg* && \
     ldconfig
 
-# 设置CUDA、FFmpeg环境变量
-ENV PATH="/usr/local/cuda/bin:${PATH}" \
-    LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/lib:${LD_LIBRARY_PATH}" \
-    CUDA_HOME="/usr/local/cuda" \
-    CUDA_PATH="/usr/local/cuda" \
-    FFMPEG_NVENC_FLAGS="-I/usr/local/cuda/include" \
-    FFMPEG_BINARY="/usr/local/bin/ffmpeg"
-
 # 验证FFmpeg是否支持NVIDIA编码器
 RUN ffmpeg -encoders | grep nvenc
 
@@ -155,16 +146,15 @@ RUN ffmpeg -encoders | grep nvenc
 WORKDIR /app
 
 # 安装Python依赖，并使用阿里云PyPI镜像加速
-RUN pip3 install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple \
-    ffmpeg-python==0.2.0 \
-    opencv-python==4.11.0 \
-    numpy==1.26.4 \
-    flask==3.1.0 \
-    gunicorn==23.0.0 \
+RUN pip3 install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple ffmpeg-python \
+    opencv-python \
+    numpy \
+    flask \
+    gunicorn \
     tensorflow==2.15.0 \
-    pillow==10.4.0 \
-    tqdm==4.67.1 \
-    moviepy==2.1.2
+    pillow \
+    tqdm \
+    moviepy
 
 # 设置环境变量
 ENV NVIDIA_VISIBLE_DEVICES=all
